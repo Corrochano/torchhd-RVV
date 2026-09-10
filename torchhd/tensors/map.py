@@ -27,7 +27,6 @@ from typing import Set
 
 from torchhd.tensors.base import VSATensor
 
-
 class MAPTensor(VSATensor):
     r"""Multiply Add Permute
 
@@ -246,7 +245,7 @@ class MAPTensor(VSATensor):
             tensor([-1., -1., -1.,  1., -1.,  1.,  1., -1., -1., -1.])
 
         """
-
+        ### AQUÍ ###
         return torch.mul(self, other)
 
     def multibind(self) -> "MAPTensor":
