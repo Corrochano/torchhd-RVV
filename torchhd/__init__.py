@@ -29,6 +29,7 @@ import torchhd.classifiers as classifiers
 import torchhd.memory as memory
 import torchhd.datasets as datasets
 import torchhd.utils as utils
+import torchhd.rvv as rvv
 
 from torchhd.tensors.base import VSATensor
 from torchhd.tensors.bsc import BSCTensor
@@ -104,6 +105,7 @@ __all__ = [
     "memory",
     "datasets",
     "utils",
+    "rvv",
     "ensure_vsa_tensor",
     "empty",
     "identity",
