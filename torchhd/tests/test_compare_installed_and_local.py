@@ -5,6 +5,7 @@ import tempfile
 import json
 import textwrap
 import pytest
+import json
 
 
 RUNNER = textwrap.dedent(
