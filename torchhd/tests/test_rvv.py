@@ -14,3 +14,12 @@ def test_rvv_fallback_bind_and_hamming():
     M = torch.stack([x, y])
     scores = torchhd.rvv.query(M, x)
     assert torch.equal(scores, torch.tensor([0, 2], dtype=torch.int64))
+
+
+def test_map_bind_uses_rvv_when_available_on_integer_map_tensors():
+    a = torch.tensor([1, -1, 1, -1], dtype=torch.int8)
+    b = torch.tensor([-1, -1, 1, 1], dtype=torch.int8)
+
+    out = torchhd.MAPTensor(a).bind(torchhd.MAPTensor(b))
+
+    assert torch.equal(out, torch.tensor([-1, 1, 1, -1], dtype=torch.int8))

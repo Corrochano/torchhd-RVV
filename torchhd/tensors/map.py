@@ -245,7 +245,38 @@ class MAPTensor(VSATensor):
             tensor([-1., -1., -1.,  1., -1.,  1.,  1., -1., -1., -1.])
 
         """
-        ### AQUÍ ###
+        if self.device.type != "cpu" or other.device.type != "cpu":
+            return torch.mul(self, other)
+
+        if self.shape != other.shape:
+            raise RuntimeError(
+                f"MAPTensor.bind expects identical shapes, got {tuple(self.shape)} and {tuple(other.shape)}."
+            )
+
+        if self.dtype not in {torch.bool, torch.int8, torch.int16, torch.int32, torch.int64}:
+            return torch.mul(self, other)
+
+        try:
+            import torchhd.rvv as rvv  # local import to avoid circular import
+        except ImportError:
+            return torch.mul(self, other)
+
+        if not rvv.is_available():
+            return torch.mul(self, other)
+
+        if self.dtype == torch.bool:
+            return rvv.bind(self.to(torch.uint8), other.to(torch.uint8)).to(self.dtype)
+
+        if torch.all((self == -1) | (self == 1)):
+            binary_self = (self < 0).to(torch.uint8)
+            binary_other = (other < 0).to(torch.uint8)
+            out = rvv.bind(binary_self, binary_other)
+            return torch.where(out.to(torch.bool), -1, 1).to(self.dtype)
+
+        if torch.all((self == 0) | (self == 1)):
+            out = rvv.bind(self.to(torch.uint8), other.to(torch.uint8))
+            return torch.where(out.to(torch.bool), 1, 0).to(self.dtype)
+
         return torch.mul(self, other)
 
     def multibind(self) -> "MAPTensor":
