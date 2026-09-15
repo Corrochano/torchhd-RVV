@@ -34,7 +34,10 @@ if should_build_rvv:
                 "torchhd/riscv/vectorialKernels.cpp",
             ],
             extra_compile_args={"cxx": extra_compile_args},
-            include_dirs=["torchhd/riscv"],
+            include_dirs=[
+                os.path.join(this_dir, "torchhd"),
+                os.path.join(this_dir, "torchhd", "riscv"),
+            ],
         )
     ]
 
