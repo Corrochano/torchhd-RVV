@@ -65,29 +65,50 @@ def run_runner(python_exe, extra_env):
 
 
 @pytest.mark.skipif(sys.executable is None, reason="No Python executable")
-def test_compare_installed_and_local():
+def test_compare_installed_distributions():
+    """Locate two installed distributions (torchHDrvv and torch-hd) and compare their inference outputs and timings.
+
+    This test will look for the distributions by name and, if found, run the same runner
+    with `PYTHONPATH` pointed to each distribution's package directory so both can be
+    imported independently in separate subprocesses.
+    """
     python_exe = sys.executable
 
-    # 1) Try to run using the installed torchhd (avoid local cwd)
-    env_installed = {"PYTHONPATH": ""}
+    # Try to locate both distributions using importlib.metadata
     try:
-        installed = run_runner(python_exe, env_installed)
-    except Exception as e:
-        pytest.skip(f"Could not run installed torchhd: {e}")
+        from importlib import metadata
+    except Exception:
+        import importlib_metadata as metadata
 
-    # 2) Run using the local checkout by forcing PYTHONPATH to repo root
-    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
-    env_local = {"PYTHONPATH": repo_root}
-    local = run_runner(python_exe, env_local)
+    candidates = ["torchHDrvv", "torch-hd", "torch_hd", "torchhd"]
+    found = []
+    for name in candidates:
+        try:
+            dist = metadata.distribution(name)
+            base = str(dist.locate_file(""))
+            pkg_dir = os.path.join(base, "torchhd")
+            if os.path.isdir(pkg_dir):
+                found.append((name, base))
+        except metadata.PackageNotFoundError:
+            continue
+        except Exception:
+            continue
 
-    # Compare outputs
-    assert installed["out"] == local["out"], "Outputs differ between installed and local torchhd builds"
+    if len(found) < 2:
+        pytest.skip("Need two installed distributions (torchHDrvv and torch-hd) present in the environment to compare")
 
-    # Print timing info for user inspection and an assertion that local is not slower by an unreasonable factor
-    installed_time = installed["time"]
-    local_time = local["time"]
+    # Use first two found distributions
+    (name_a, base_a), (name_b, base_b) = found[0], found[1]
 
-    # Allow local to be slower; alert if it's more than 10x slower
-    assert local_time / max(installed_time, 1e-12) < 10.0, f"Local build is too slow: {local_time} vs installed {installed_time}"
+    a = run_runner(python_exe, {"PYTHONPATH": base_a})
+    b = run_runner(python_exe, {"PYTHONPATH": base_b})
 
-    print(f"installed_time={installed_time:.6f}s local_time={local_time:.6f}s speedup={installed_time/local_time:.3f}")
+    assert a["out"] == b["out"], f"Outputs differ between {name_a} and {name_b}"
+
+    time_a = a["time"]
+    time_b = b["time"]
+
+    # sanity check: neither should be more than 10x slower
+    assert time_a / max(time_b, 1e-12) < 10.0 and time_b / max(time_a, 1e-12) < 10.0
+
+    print(f"{name_a}: {time_a:.6f}s  {name_b}: {time_b:.6f}s  speedup={time_b/time_a:.3f}")
