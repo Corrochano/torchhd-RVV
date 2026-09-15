@@ -11,6 +11,7 @@ import json
 RUNNER = textwrap.dedent(
     """
 import time
+import json
 import torch
 import torchhd
 
