@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include <torch/extension.h>
-#include "../riscv/vectorialKernels.h"
+#include "vectorialKernels.h"
 
 torch::Tensor rvv_bind_tensor(torch::Tensor x, torch::Tensor y) {
     TORCH_CHECK(x.device().is_cpu() && y.device().is_cpu(), "Inputs must be CPU tensors");
