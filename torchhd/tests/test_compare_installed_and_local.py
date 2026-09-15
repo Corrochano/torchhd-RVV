@@ -120,12 +120,28 @@ def test_compare_installed_distributions():
     a = run_runner(python_exe, {"PYTHONPATH": base_a})
     b = run_runner(python_exe, {"PYTHONPATH": base_b})
 
-    assert a["out"] == b["out"], f"Outputs differ between {name_a} and {name_b}"
+    # Compare Centroid predictions
+    assert (
+        a.get("centroid", {}).get("pred") == b.get("centroid", {}).get("pred")
+    ), f"Centroid outputs differ between {name_a} and {name_b}: {a.get('centroid')} vs {b.get('centroid')}"
 
-    time_a = a["time"]
-    time_b = b["time"]
+    # Compare IntRVFL predictions
+    assert (
+        a.get("intrvfl", {}).get("pred") == b.get("intrvfl", {}).get("pred")
+    ), f"IntRVFL outputs differ between {name_a} and {name_b}: {a.get('intrvfl')} vs {b.get('intrvfl')}"
 
-    # sanity check: neither should be more than 10x slower
-    assert time_a / max(time_b, 1e-12) < 10.0 and time_b / max(time_a, 1e-12) < 10.0
+    # Timing sanity checks per-model: neither should be more than 10x slower
+    time_a_cent = a.get("centroid", {}).get("time") or float("inf")
+    time_b_cent = b.get("centroid", {}).get("time") or float("inf")
+    time_a_int = a.get("intrvfl", {}).get("time") or float("inf")
+    time_b_int = b.get("intrvfl", {}).get("time") or float("inf")
 
-    print(f"{name_a}: {time_a:.6f}s  {name_b}: {time_b:.6f}s  speedup={time_b/time_a:.3f}")
+    assert time_a_cent / max(time_b_cent, 1e-12) < 10.0 and time_b_cent / max(time_a_cent, 1e-12) < 10.0
+    assert time_a_int / max(time_b_int, 1e-12) < 10.0 and time_b_int / max(time_a_int, 1e-12) < 10.0
+
+    print(
+        f"{name_a} Centroid: {time_a_cent:.6f}s  {name_b} Centroid: {time_b_cent:.6f}s  speedup={time_b_cent/time_a_cent:.3f}"
+    )
+    print(
+        f"{name_a} IntRVFL: {time_a_int:.6f}s  {name_b} IntRVFL: {time_b_int:.6f}s  speedup={time_b_int/time_a_int:.3f}"
+    )
