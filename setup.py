@@ -8,7 +8,7 @@ import os
 import platform
 import sys
 
-from torch.utils.cpp_extension import CppExtension
+from torch.utils.cpp_extension import BuildExtension, CppExtension
 from setuptools import find_packages, setup
 
 # Read the version without importing any dependencies
@@ -41,6 +41,7 @@ if should_build_rvv:
 setup(
     name="torchHDrvv",
     version=version["__version__"],
+    cmdclass={"build_ext": BuildExtension},
     description="Torchhd is a Python library for Hyperdimensional Computing and Vector Symbolic Architectures",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
