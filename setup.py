@@ -25,6 +25,7 @@ if should_build_rvv and sys.platform != "win32":
     extra_compile_args.extend(["-march=rv64gcv"])
 
 ext_modules = []
+this_dir = os.path.abspath(os.path.dirname(__file__))
 if should_build_rvv:
     ext_modules = [
         CppExtension(
