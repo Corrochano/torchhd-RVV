@@ -39,7 +39,7 @@ if should_build_rvv:
     ]
 
 setup(
-    name="torch-hd",  # use torch-hd on PyPi to install torchhd, torchhd is too similar according to PyPi
+    name="torchHDrvv",
     version=version["__version__"],
     description="Torchhd is a Python library for Hyperdimensional Computing and Vector Symbolic Architectures",
     long_description=open("README.md").read(),
