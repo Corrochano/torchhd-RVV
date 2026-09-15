@@ -17,35 +17,50 @@ import torchhd
 
 torch.manual_seed(0)
 
-# Build two reproducible MAP tensors of 1000 elements
-vec_len = 1000
-seed = 0
-torch.manual_seed(seed)
-raw_a = (torch.rand(vec_len) > 0.5).to(dtype=torch.int8)
-torch.manual_seed(seed + 1)
-raw_b = (torch.rand(vec_len) > 0.5).to(dtype=torch.int8)
+# Benchmark settings
+batch = 32
+in_features = 1024
+out_features = 10
+repeats = 100
 
-# Wrap as MAPTensor if available
+res = {}
+
+# 1) Centroid model
 try:
-    A = torchhd.MAPTensor(raw_a)
-    B = torchhd.MAPTensor(raw_b)
-except Exception:
-    A = raw_a
-    B = raw_b
+    C = torchhd.models.Centroid(in_features, out_features)
+    # initialize prototype weights randomly for a meaningful inference
+    C.weight.copy_(torch.randn(out_features, in_features))
+    X = torch.randn(batch, in_features)
+    # warm-up
+    for _ in range(5):
+        _ = C(X)
+    t0 = time.perf_counter()
+    for _ in range(repeats):
+        out_c = C(X)
+    t1 = time.perf_counter()
+    pred_c = out_c.argmax(1).cpu().numpy().tolist()
+    res['centroid'] = {'pred': pred_c, 'time': t1 - t0}
+except Exception as e:
+    res['centroid'] = {'error': str(e)}
 
-# Warm-up
-for _ in range(5):
-    _ = A.bind(B)
+# 2) IntRVFL model
+try:
+    D = torchhd.models.IntRVFL(in_features, dimensions=in_features, out_features=out_features)
+    D.weight.copy_(torch.randn(out_features, in_features))
+    X = torch.randn(batch, in_features)
+    # warm-up
+    for _ in range(5):
+        _ = D(X)
+    t0 = time.perf_counter()
+    for _ in range(repeats):
+        out_d = D(X)
+    t1 = time.perf_counter()
+    pred_d = out_d.argmax(1).cpu().numpy().tolist()
+    res['intrvfl'] = {'pred': pred_d, 'time': t1 - t0}
+except Exception as e:
+    res['intrvfl'] = {'error': str(e)}
 
-repeats = 200
-start = time.perf_counter()
-for _ in range(repeats):
-    out = A.bind(B)
-end = time.perf_counter()
-
-out_list = out.to(torch.int8).cpu().numpy().tolist()
-result = {"out": out_list, "time": end - start}
-print(json.dumps(result))
+print(json.dumps(res))
 """
 )
 
